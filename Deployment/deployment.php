@@ -67,6 +67,8 @@ foreach ($config as $section => $cfg) {
 		'purge' => '',
 		'before' => '',
 		'after' => '',
+		'cssfilters' => '',
+		'jsfilters' => '',
 	);
 
 	if (empty($cfg['remote'])) {
@@ -75,12 +77,18 @@ foreach ($config as $section => $cfg) {
 
 	$deployment = new Deployment($cfg['remote'], $cfg['local'], $logger);
 
+	$filters = array();
+	$filters['css'] = is_array($cfg['cssfilters']) ? $cfg['cssfilters'] : preg_split('#\s+#', $cfg['cssfilters'], -1, PREG_SPLIT_NO_EMPTY);
+	$filters['js'] = is_array($cfg['jsfilters']) ? $cfg['jsfilters'] : preg_split('#\s+#', $cfg['jsfilters'], -1, PREG_SPLIT_NO_EMPTY);
+
 	$preprocessor = new Preprocessor($logger);
-	$deployment->addFilter('js', array($preprocessor, 'expandApacheImports'));
-	$deployment->addFilter('js', array($preprocessor, 'compress'));
-	$deployment->addFilter('css', array($preprocessor, 'expandApacheImports'));
-	$deployment->addFilter('css', array($preprocessor, 'expandCssImports'));
-	$deployment->addFilter('css', array($preprocessor, 'compress'));
+	foreach ($filters as $filterType => $filtersForType) {
+		if (!empty($filtersForType)) {
+			foreach ($filtersForType as $filter) {
+				$deployment->addFilter($filterType, array($preprocessor, $filter));
+			}
+		}
+	}
 
 	$deployment->ignoreMasks = array_merge(
 		array('*.bak', '.svn' , '.git*'),
