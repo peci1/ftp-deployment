@@ -75,6 +75,23 @@ foreach ($config as $section => $cfg) {
 		throw new Exception("Missing 'remote' in config.");
 	}
 
+	if (isset($cfg['encryptedpassword']) && $cfg['encryptedpassword'] == 1) {
+		$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
+		srand();
+		$iv = mcrypt_create_iv($iv_size);
+		echo 'Enter the master password: ';
+		$key = trim(fgets(STDIN));
+		echo "\n";
+		if (preg_match('/:([a-zA-Z0-9=]*)@/', $cfg['remote'], $matches)) {
+			$encPassword = base64_decode($matches[1]);
+			$plaintextPassword = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encPassword, MCRYPT_MODE_ECB, $iv));
+			$newRemote = preg_replace('/:[a-zA-Z0-9=]*@/', ':' . $plaintextPassword . '@', $cfg['remote']);
+			$cfg['remote'] = $newRemote;
+		} else {
+			throw new Exception('No encrypted password found in the remote definition');
+		}
+	}
+
 	$deployment = new Deployment($cfg['remote'], $cfg['local'], $logger);
 
 	$filters = array();
