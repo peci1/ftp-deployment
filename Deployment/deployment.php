@@ -82,10 +82,10 @@ foreach ($config as $section => $cfg) {
 		echo 'Enter the master password: ';
 		$key = trim(fgets(STDIN));
 		echo "\n";
-		if (preg_match('/:([a-zA-Z0-9=]*)@/', $cfg['remote'], $matches)) {
+		if (preg_match('#:([a-zA-Z0-9=/+]*)@#', $cfg['remote'], $matches)) {
 			$encPassword = base64_decode($matches[1]);
 			$plaintextPassword = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encPassword, MCRYPT_MODE_ECB, $iv));
-			$newRemote = preg_replace('/:[a-zA-Z0-9=]*@/', ':' . $plaintextPassword . '@', $cfg['remote']);
+			$newRemote = preg_replace('#:[a-zA-Z0-9=/+]*@#', ':' . $plaintextPassword . '@', $cfg['remote']);
 			$cfg['remote'] = $newRemote;
 		} else {
 			throw new Exception('No encrypted password found in the remote definition');
